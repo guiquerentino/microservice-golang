@@ -10,7 +10,7 @@ import (
 )
 
 func SetupRoutes(db *gorm.DB) *gin.Engine {
-
+	//
 	routes := gin.Default()
 
 	routes.POST("api/album", func(context *gin.Context) {
