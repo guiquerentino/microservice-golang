@@ -21,6 +21,6 @@ func init() {
 func main() {
 
 	route := routes.SetupRoutes(db)
-	route.Run(":8080")
+	route.Run(":8081")
 
 }

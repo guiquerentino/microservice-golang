@@ -1,9 +1,12 @@
 package routes
 
 import (
+	"encoding/json"
+	"fmt"
+	"microservice-golang/api/entities"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"microservice-golang/api/entities"
 )
 
 func SetupRoutes(db *gorm.DB) *gin.Engine {
@@ -11,15 +14,30 @@ func SetupRoutes(db *gorm.DB) *gin.Engine {
 	routes := gin.Default()
 
 	routes.POST("api/album", func(context *gin.Context) {
-		var request entities.Album
+		var request entities.AlbumDTO
 
 		if err := context.ShouldBindJSON(&request); err != nil {
 			context.JSON(400, gin.H{
-				"message": "Erro processing your request",
+				"message": "Error processing your request",
 			})
 		} else {
 
-			db.Create(&request)
+			var objetoDB entities.Album
+			objetoDB.Author = request.Author
+			objetoDB.Genre = request.Genre
+			objetoDB.Name = request.Name
+
+			musicsJson, err := json.Marshal(request.Musics)
+
+			if err != nil {
+				context.JSON(500, gin.H{
+					"message": "Error during JSON Serialization!",
+				})
+			} else {
+				objetoDB.Musics = string(musicsJson)
+			}
+
+			db.Create(&objetoDB)
 
 			context.JSON(200, gin.H{
 				"message": "Album successfully added!",
@@ -34,22 +52,30 @@ func SetupRoutes(db *gorm.DB) *gin.Engine {
 
 		err := db.First(&object, id)
 
-		if err != nil {
+		if err.Error != nil {
 			context.JSON(404, gin.H{
-				"message":    "Album not found!",
-				"stacktrace": err.Error,
+				"message": "Album not found!",
 			})
 		} else {
-			context.JSON(200, object)
+
+			var response entities.AlbumDTO
+			json.Unmarshal([]byte(object.Musics), &response.Musics)
+			response.Name = object.Name
+			response.Genre = object.Genre
+			response.Author = object.Author
+
+			context.JSON(200, response)
 		}
 
 	})
 
 	routes.PUT("api/album/:id", func(context *gin.Context) {
-		var request entities.Album
+		var request entities.AlbumDTO
 		var dbObject entities.Album
 
 		id := context.Param("id")
+
+		fmt.Println(id)
 
 		if err := context.ShouldBindJSON(&request); err != nil {
 			context.JSON(400, gin.H{
@@ -57,9 +83,7 @@ func SetupRoutes(db *gorm.DB) *gin.Engine {
 			})
 		} else {
 
-			err := db.First(&dbObject, id)
-
-			if err != nil {
+			if err := db.First(&dbObject, id); err.Error != nil {
 				context.JSON(404, gin.H{
 					"message":    "Album not found!",
 					"stacktrace": err.Name(),
@@ -69,7 +93,16 @@ func SetupRoutes(db *gorm.DB) *gin.Engine {
 				dbObject.Genre = request.Genre
 				dbObject.Author = request.Author
 				dbObject.Name = request.Name
-				//dbObject.Musics = request.Musics
+
+				musicsJson, err := json.Marshal(request.Musics)
+
+				if err != nil {
+					context.JSON(500, gin.H{
+						"message": "Error during JSON Serialization!",
+					})
+				} else {
+					dbObject.Musics = string(musicsJson)
+				}
 
 				db.Save(&dbObject)
 
@@ -85,28 +118,20 @@ func SetupRoutes(db *gorm.DB) *gin.Engine {
 
 		id := context.Param("id")
 
-		if err := context.ShouldBindJSON(&request); err != nil {
-			context.JSON(400, gin.H{
-				"message": "Erro processing your request",
+		err := db.Delete(&request, id)
+
+		if err.Error != nil {
+			context.JSON(404, gin.H{
+				"message":    "Album not found!",
+				"stacktrace": err.Name(),
 			})
 		} else {
 
-			err := db.Delete(&request, id)
-
-			if err != nil {
-				context.JSON(404, gin.H{
-					"message":    "Album not found!",
-					"stacktrace": err.Name(),
-				})
-			} else {
-
-				context.JSON(200, gin.H{
-					"mensagem": "Album successfully deleted!",
-				})
-			}
+			context.JSON(200, gin.H{
+				"mensage": "Album successfully deleted!",
+			})
 		}
+
 	})
-
 	return routes
-
 }
