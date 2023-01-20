@@ -1,13 +1,14 @@
 package config
 
 import (
+	"log"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
 )
 
 const (
-	dsn = "root:@tcp(localhost:3306)/banco?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn = "root:Querentino1!@tcp(localhost:3307)/banco?charset=utf8mb4&parseTime=True&loc=Local"
 )
 
 func NewDatabaseConnection() *gorm.DB {
